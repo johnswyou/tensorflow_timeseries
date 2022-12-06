@@ -7,6 +7,10 @@ import pandas as pd
 
 # Reference: https://www.tensorflow.org/tutorials/structured_data/time_series
 
+# Note 1: in __init__, shift is the lead time (forecast horizon)
+# Note 2: label columns is a list of strings that denote the column name(s) of your target variable(s)
+# Note 3: Leave label_width = 1
+
 class WindowGenerator():
   def __init__(self, input_width, label_width, shift,
                train_df, val_df, test_df,
@@ -201,6 +205,9 @@ def get_jena():
 # Reference: https://www.tensorflow.org/tutorials/structured_data/time_series
 
 def compile_and_fit(model, window, max_epochs, patience=2):
+
+  # 1. window is the instanatiated object from doing window = WindowGenerator(...)
+
   early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss',
                                                     patience=patience,
                                                     mode='min')
@@ -217,7 +224,9 @@ def compile_and_fit(model, window, max_epochs, patience=2):
 # Reference: https://www.tensorflow.org/tutorials/structured_data/time_series
 
 def split_data(df, train_fraction, val_fraction, normalization=True):
-  
+
+  # 1. df should be a pandas data frame
+
   n = len(df)
   
   train_df = df[0:int(n*train_fraction)]
