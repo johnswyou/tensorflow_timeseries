@@ -213,3 +213,24 @@ def compile_and_fit(model, window, max_epochs, patience=2):
                       validation_data=window.val,
                       callbacks=[early_stopping])
   return history
+
+# Reference: https://www.tensorflow.org/tutorials/structured_data/time_series
+
+def split_data(df, train_fraction, val_fraction, normalization=True):
+  
+  n = len(df)
+  
+  train_df = df[0:int(n*train_fraction)]
+  val_df = df[int(n*train_fraction):int(n*(train_fraction+val_fraction))]
+  test_df = df[int(n*(train_fraction+val_fraction)):]
+
+  if (normalization):
+
+    train_mean = train_df.mean()
+    train_std = train_df.std()
+
+    train_df = (train_df - train_mean) / train_std
+    val_df = (val_df - train_mean) / train_std
+    test_df = (test_df - train_mean) / train_std
+
+  return train_df, val_df, test_df
