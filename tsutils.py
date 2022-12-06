@@ -2,6 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
 
+import os
+import pandas as pd
+
 # Reference: https://www.tensorflow.org/tutorials/structured_data/time_series
 
 class WindowGenerator():
@@ -125,3 +128,72 @@ class WindowGenerator():
       # And cache it for next time
       self._example = result
     return result
+
+# Reference: https://www.tensorflow.org/tutorials/structured_data/time_series
+
+def get_jena():
+
+  # ****************************************
+  # Download and read Jena weather data set
+  # ****************************************
+
+  zip_path = tf.keras.utils.get_file(
+    origin='https://storage.googleapis.com/tensorflow/tf-keras-datasets/jena_climate_2009_2016.csv.zip',
+    fname='jena_climate_2009_2016.csv.zip',
+    extract=True)
+  csv_path, _ = os.path.splitext(zip_path)
+
+  df = pd.read_csv(csv_path)
+  # Slice [start:stop:step], starting from index 5 take every 6th record.
+  df = df[5::6]
+
+  date_time = pd.to_datetime(df.pop('Date Time'), format='%d.%m.%Y %H:%M:%S')
+
+  # **************
+  # Data cleaning
+  # **************
+
+  wv = df['wv (m/s)']
+  bad_wv = wv == -9999.0
+  wv[bad_wv] = 0.0
+
+  max_wv = df['max. wv (m/s)']
+  bad_max_wv = max_wv == -9999.0
+  max_wv[bad_max_wv] = 0.0
+
+  # The above inplace edits are reflected in the DataFrame.
+  # df['wv (m/s)'].min()
+
+  # ********************
+  # Feature engineering
+  # ********************
+
+  wv = df.pop('wv (m/s)')
+  max_wv = df.pop('max. wv (m/s)')
+
+  # Convert to radians.
+  wd_rad = df.pop('wd (deg)')*np.pi / 180
+
+  # Calculate the wind x and y components.
+  df['Wx'] = wv*np.cos(wd_rad)
+  df['Wy'] = wv*np.sin(wd_rad)
+
+  # Calculate the max wind x and y components.
+  df['max Wx'] = max_wv*np.cos(wd_rad)
+  df['max Wy'] = max_wv*np.sin(wd_rad)
+
+  # *****
+  # Time
+  # *****
+  
+  timestamp_s = date_time.map(pd.Timestamp.timestamp)
+
+  day = 24*60*60
+  year = (365.2425)*day
+
+  df['Day sin'] = np.sin(timestamp_s * (2 * np.pi / day))
+  df['Day cos'] = np.cos(timestamp_s * (2 * np.pi / day))
+  df['Year sin'] = np.sin(timestamp_s * (2 * np.pi / year))
+  df['Year cos'] = np.cos(timestamp_s * (2 * np.pi / year))
+
+  return df
