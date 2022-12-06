@@ -197,3 +197,19 @@ def get_jena():
   df['Year cos'] = np.cos(timestamp_s * (2 * np.pi / year))
 
   return df
+
+# Reference: https://www.tensorflow.org/tutorials/structured_data/time_series
+
+def compile_and_fit(model, window, max_epochs, patience=2):
+  early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss',
+                                                    patience=patience,
+                                                    mode='min')
+
+  model.compile(loss=tf.keras.losses.MeanSquaredError(),
+                optimizer=tf.keras.optimizers.Adam(),
+                metrics=[tf.keras.metrics.MeanAbsoluteError()])
+
+  history = model.fit(window.train, epochs=max_epochs,
+                      validation_data=window.val,
+                      callbacks=[early_stopping])
+  return history
