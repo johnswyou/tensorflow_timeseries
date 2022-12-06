@@ -5,6 +5,8 @@ import tensorflow as tf
 import os
 import pandas as pd
 
+from tensorflow.keras import backend as K
+
 # Reference: https://www.tensorflow.org/tutorials/structured_data/time_series
 
 # Note 1: in __init__, shift is the lead time (forecast horizon)
@@ -212,7 +214,8 @@ def compile_and_fit(model, window, max_epochs, patience=2):
                                                     patience=patience,
                                                     mode='min')
 
-  model.compile(loss=tf.keras.losses.MeanSquaredError(),
+  model.compile(#loss=tf.keras.losses.MeanSquaredError(),
+                loss = nse_loss,
                 optimizer=tf.keras.optimizers.Adam(),
                 metrics=[tf.keras.metrics.MeanAbsoluteError()])
 
@@ -243,3 +246,50 @@ def split_data(df, train_fraction, val_fraction, normalization=True):
     test_df = (test_df - train_mean) / train_std
 
   return train_df, val_df, test_df
+
+# Reference: https://www.tensorflow.org/tutorials/structured_data/time_series
+
+def split_data_2(df, train_fraction, val_fraction, label_column, normalization=True):
+
+  # 1. df should be a pandas data frame
+  # 2. This function does not scale/normalize the target variable
+
+  n = len(df)
+  
+  train_df = df[0:int(n*train_fraction)]
+  val_df = df[int(n*train_fraction):int(n*(train_fraction+val_fraction))]
+  test_df = df[int(n*(train_fraction+val_fraction)):]
+
+  if (normalization):
+
+    train_x_mean = train_df.loc[:, train_df.columns != label_column].mean()
+    train_x_std = train_df.loc[:, train_df.columns != label_column].std()
+
+    train_df_copy = train_df.copy()
+    val_df_copy = val_df.copy()
+    test_df_copy = test_df.copy()
+
+    train_df_copy.loc[:, train_df.columns != label_column] = (train_df.loc[:, train_df.columns != label_column] - train_x_mean) / train_x_std
+    val_df_copy.loc[:, train_df.columns != label_column] = (val_df.loc[:, train_df.columns != label_column] - train_x_mean) / train_x_std
+    test_df_copy.loc[:, train_df.columns != label_column] = (test_df.loc[:, train_df.columns != label_column] - train_x_mean) / train_x_std
+
+  return train_df_copy, val_df_copy, test_df_copy
+
+# Reference: https://github.com/gee-community/ee-tensorflow-notebooks/blob/master/streamflow_prediction_lstm/ee_streamflow_prediction_lstm.ipynb
+
+def nse_loss(y_true, y_pred):
+    """
+    Custom metric function to calculate the Nash-Sutcliffe model efficientcy coefficient
+    From: https://en.wikipedia.org/wiki/Nash%E2%80%93Sutcliffe_model_efficiency_coefficient
+    Commonly used in hydrology to evaluate a model performance (NSE > 0.7 is good)
+    
+    Args:
+        y_true: Tensor with true values from observations/labels
+        y_pred: Tensor of predicted values from model
+    Returns: 
+       tf.Tensor of the inverted NSE value
+    """
+    numer = K.sum(K.pow(y_true-y_pred,2))
+    denom = K.sum(K.pow(y_true-K.mean(y_true),2)) + K.epsilon()
+    nse = (1 - (numer/denom))
+    return -1*nse
