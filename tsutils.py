@@ -92,7 +92,7 @@ class WindowGenerator():
 
     plt.xlabel('Time')
 
-  def make_dataset(self, data, batch_size):
+  def make_dataset(self, data, batch_size=32):
     data = np.array(data, dtype=np.float32)
     ds = tf.keras.utils.timeseries_dataset_from_array(
         data=data,
