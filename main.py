@@ -18,40 +18,42 @@ dim_w3= Integer(low=1, high=6, name='w3')
 dim_w4= Integer(low=1, high=6, name='w4')
 dim_w5= Integer(low=1, high=6, name='w5')
 dim_w6= Integer(low=1, high=6, name='w6')
+dim_w7= Integer(low=1, high=6, name='w7')
 
-dim_w7= Integer(low=1, high=20, name='w7')
 dim_w8= Integer(low=1, high=20, name='w8')
 dim_w9= Integer(low=1, high=20, name='w9')
 dim_w10= Integer(low=1, high=20, name='w10')
 dim_w11= Integer(low=1, high=20, name='w11')
 dim_w12= Integer(low=1, high=20, name='w12')
+dim_w13= Integer(low=1, high=20, name='w13')
+dim_w14= Integer(low=1, high=20, name='w14')
 
 # LSTM architecture
-dim_w13= Integer(low=2, high=8, name='LSTM_units')
-dim_w14= Integer(low=1, high=9, name='recurrent_dropout')
-dim_w15= Integer(low=1, high=9, name='dropout')
+dim_w15= Integer(low=2, high=8, name='LSTM_units')
+dim_w16= Integer(low=1, high=9, name='recurrent_dropout')
+dim_w17= Integer(low=1, high=9, name='dropout')
 
-dimensions = [dim_w1,dim_w2,dim_w3,dim_w4,dim_w5,dim_w6,dim_w7,dim_w8, dim_w9, dim_w10, dim_w11, dim_w12, dim_w13, dim_w14, dim_w15]
+dimensions = [dim_w1,dim_w2,dim_w3,dim_w4,dim_w5,dim_w6,dim_w7,dim_w8, dim_w9, dim_w10, dim_w11, dim_w12, dim_w13, dim_w14, dim_w15, dim_w16, dim_w17]
 
 # *******************
 # Objective function
 # *******************
 
 @use_named_args(dimensions=dimensions)
-def fitness_LSTM(w1,w2,w3,w4,w5,w6,w7,w8,w9,w10,w11,w12,LSTM_units,recurrent_dropout,dropout):
+def fitness_LSTM(w1,w2,w3,w4,w5,w6,w7,w8,w9,w10,w11,w12,w13,w14,LSTM_units,recurrent_dropout,dropout):
     
     print('Training a new configuration ...')
 
     tempfun = make_preprocessor_function("HUC_03_GAGEID_03488000")
-    basin_3 = tempfun([w1,w2,w3,w4,w5,w6,w7,w8,w9,w10,w11,w12])
-    basin_3.drop("y_0", axis=1, inplace=True)
+    basin_3 = tempfun([w1,w2,w3,w4,w5,w6,w7,w8,w9,w10,w11,w12,w13,w14])
+    # basin_3.drop("y_0", axis=1, inplace=True)
     train_df, val_df, test_df = split_data_2(basin_3, 0.7, 0.15, "y_target")
 
     ##########################################################################################################
     # CHANGE THE FIRST AND THIRD ARGUMENTS IN WindowGenerator BELOW TO CHANGE LOOKBACK AND FORECAST LEAD TIME
     ##########################################################################################################
 
-    w = WindowGenerator(15, 1, 0, train_df, val_df, test_df, ['y_target'])
+    w = WindowGenerator(14, 1, 1, train_df, val_df, test_df, ['y_target'])
 
     lstm_model = tf.keras.models.Sequential([
         # Shape [batch, time, features] => [batch, time, lstm_units]
@@ -113,6 +115,6 @@ if __name__ == "__main__":
     list_hp.append(-best_accuracy)
 
     # Change the names if you want
-    pd_best=pd.DataFrame(list_hp, index=['w1','w2','w3','w4','w5','w6','w7','w8','w9','w10','w11','w12','LSTM_units', 'recurrent_dropout', 'dropout','NSE'],columns=['parameter'])
+    pd_best=pd.DataFrame(list_hp, index=['w1','w2','w3','w4','w5','w6','w7','w8','w9','w10','w11','w12','w13','w14','LSTM_units', 'recurrent_dropout', 'dropout','NSE'],columns=['parameter'])
     name_best='best_config_LSTM_it.csv'
     pd_best.to_csv(name_best)

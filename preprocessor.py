@@ -61,7 +61,7 @@ def make_preprocessor_function(dataset="ourthe"):
                                          .x,
                                          .wt,
                                          .max_decomp_level, .max_wavelet_length,
-                                         .temp_param=FALSE)
+                                         .temp_param=TRUE)
     ''')
 
     obj_func = robjects.globalenv['obj_func']
